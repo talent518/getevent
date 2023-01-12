@@ -7,12 +7,36 @@
 #include <sys/ioctl.h>
 #include <linux/input.h>
 #include <errno.h>
-#include <getopt.h>
+#include <time.h>
 
 typedef struct {
 	char *path;
 	int fd;
 } map_t;
+
+char *nowtime(void) {
+	static char buf[64];
+	struct timeval tv = {0, 0};
+	struct tm tm;
+
+	gettimeofday(&tv, NULL);
+	localtime_r(&tv.tv_sec, &tm);
+
+	snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d.%06ld",
+		tm.tm_year + 1900, tm.tm_mon, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec,
+		tv.tv_usec
+	);
+
+	return buf;
+}
+
+#define LOGE(fmt, args...) do { \
+	char *err = strerror(errno); \
+	fprintf(stderr, "[%s] " fmt ": %s\n", nowtime(), args, err); \
+} while(1)
+
+#define LOGI(fmt, args...) fprintf(stdout, "[%s] " fmt "\n", nowtime(), args)
 
 int main(int argc, char *argv[]) {
 	int i;
@@ -29,6 +53,7 @@ int main(int argc, char *argv[]) {
 
 	int flag = argc > 1 ? atoi(argv[1]) : 0;
 	int N = flag ? 5 : 4;
+	long int usec = 0;
 
 	while(fgets(line, sizeof(line), stdin)) {
 		if(flag) {
@@ -41,6 +66,12 @@ int main(int argc, char *argv[]) {
 			ret = sscanf(line, "%[^:]: %hx %hx %x", path, &event.type, &event.code, &event.value);
 		}
 		if(ret == N) {
+			if(prevdelay >= 0) {
+				usec = (delay - prevdelay) * 1000000;
+				usleep(usec);
+			}
+			prevdelay = delay;
+			
 			fd = -1;
 			for(i = 0; i < map_size; i++) {
 				if(strcmp(path, maps[i].path) == 0) {
@@ -51,10 +82,10 @@ int main(int argc, char *argv[]) {
 			if(fd == -1) {
 				fd = open(path, O_RDWR);
 				if(fd == -1) {
-					fprintf(stderr, "open %s failure: %s\n", path, strerror(errno));
+					LOGE("open %s failure", path);
 					goto next;
 				} else if(ioctl(fd, EVIOCGVERSION, &version)) {
-					fprintf(stderr, "ioctl get device version failure: %s\n", strerror(errno));
+					LOGE("ioctl get device version failure(path: %s)", path);
 					close(fd);
 				} else {
 					maps[map_size].path = strdup(path);
@@ -63,18 +94,23 @@ int main(int argc, char *argv[]) {
 				}
 			}
 
-			if(prevdelay >= 0) usleep((delay - prevdelay) * 1000000);
-			prevdelay = delay;
-			
 			ret = write(fd, &event, sizeof(event));
-			if(ret < sizeof(event)) {
-				fprintf(stderr, "write event failed(%s %d %d %d): %s\n", path, event.type, event.code, event.value, strerror(errno));
+			if(flag) {
+				if(ret < sizeof(event)) {
+					LOGE("write event failed(%lf(%.3lf ms) %s %04x %04x %08x)", delay, usec / 1000.0f, path, event.type, event.code, event.value);
+				} else {
+					LOGI("%lf(%.3lf ms) %s %04x %04x %08x", delay, usec / 1000.0f, path, event.type, event.code, event.value);
+				}
 			} else {
-				fprintf(stdout, "%lf %s %x %x %x\n", delay, path, event.type, event.code, event.value);
+				if(ret < sizeof(event)) {
+					LOGE("write event failed(%s %04x %04x %08x)", path, event.type, event.code, event.value);
+				} else {
+					LOGI("%s %04x %04x %08x", path, event.type, event.code, event.value);
+				}
 			}
 		} else {
 			err:
-			fprintf(stderr, "sscanf failure: %d\n", ret);
+			LOGE("sscanf failure(ret: %d)", ret);
 		}
 		next:
 		fflush(stdout);
