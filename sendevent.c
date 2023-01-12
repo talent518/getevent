@@ -14,6 +14,11 @@ typedef struct {
 	int fd;
 } map_t;
 
+#define MAP_SIZE 16
+static map_t maps[MAP_SIZE];
+static int map_size = 0;
+
+
 char *nowtime(void) {
 	static char buf[64];
 	struct timeval tv = {0, 0};
@@ -45,8 +50,6 @@ int main(int argc, char *argv[]) {
 	int version;
 	struct input_event event;
 	
-	map_t maps[16];
-	int map_size = 0;
 	char line[1024];
 	char path[256];
 	double delay = 0, prevdelay = -1;
@@ -80,6 +83,10 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			if(fd == -1) {
+				if(map_size >= MAP_SIZE) {
+					LOGE("The path index buffer is full(new: %s)", path);
+					goto next;
+				}
 				fd = open(path, O_RDWR);
 				if(fd == -1) {
 					LOGE("open %s failure", path);
@@ -87,6 +94,7 @@ int main(int argc, char *argv[]) {
 				} else if(ioctl(fd, EVIOCGVERSION, &version)) {
 					LOGE("ioctl get device version failure(path: %s)", path);
 					close(fd);
+					goto next;
 				} else {
 					maps[map_size].path = strdup(path);
 					maps[map_size].fd = fd;
@@ -109,7 +117,6 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		} else {
-			err:
 			LOGE("sscanf failure(ret: %d)", ret);
 		}
 		next:
