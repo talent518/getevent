@@ -1,2 +1,2 @@
 # getevent
-Android getevent ported to Linux
+Android getevent/sendevent ported to Linux
