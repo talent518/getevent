@@ -34,11 +34,11 @@ int main(int argc, char *argv[]) {
 		if(flag) {
 			if(line[0] != '[') continue;
 
-			ret = sscanf(line, "[%lf] %[^:]: %x %x %x", &delay, path, &event.type, &event.code, &event.value);
+			ret = sscanf(line, "[%lf] %[^:]: %hx %hx %x", &delay, path, &event.type, &event.code, &event.value);
 		} else {
 			if(strncmp(line, "/dev/", 5)) continue;
 
-			ret = sscanf(line, "%[^:]: %x %x %x", path, &event.type, &event.code, &event.value);
+			ret = sscanf(line, "%[^:]: %hx %hx %x", path, &event.type, &event.code, &event.value);
 		}
 		if(ret == N) {
 			fd = -1;

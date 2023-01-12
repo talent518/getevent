@@ -1,10 +1,10 @@
 all: getevent sendevent
 
 getevent: getevent.c | input.h-labels.h
-	$(CROSS_COMPILE)gcc -o $@ $<
+	$(CROSS_COMPILE)gcc -O2 -o $@ $<
 
 sendevent: sendevent.c | input.h-labels.h
-	$(CROSS_COMPILE)gcc -o $@ $<
+	$(CROSS_COMPILE)gcc -O2 -o $@ $<
 
 input.h-labels.h:
 	./generate-input.h-labels.py > $@
