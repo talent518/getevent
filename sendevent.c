@@ -39,7 +39,7 @@ char *nowtime(void) {
 #define LOGE(fmt, args...) do { \
 	char *err = strerror(errno); \
 	fprintf(stderr, "[%s] " fmt ": %s\n", nowtime(), args, err); \
-} while(1)
+} while(0)
 
 #define LOGI(fmt, args...) fprintf(stdout, "[%s] " fmt "\n", nowtime(), args)
 
@@ -50,23 +50,25 @@ int main(int argc, char *argv[]) {
 	int version;
 	struct input_event event;
 	
-	char line[1024];
+	char linebuf[1024];
 	char path[256];
 	double delay = 0, prevdelay = -1;
 
 	int flag = argc > 1 ? atoi(argv[1]) : 0;
 	int N = flag ? 5 : 4;
 	long int usec = 0;
+	int lineno = 0;
 
-	while(fgets(line, sizeof(line), stdin)) {
+	while(fgets(linebuf, sizeof(linebuf), stdin)) {
+		lineno ++;
 		if(flag) {
-			if(line[0] != '[') continue;
+			if(linebuf[0] != '[') continue;
 
-			ret = sscanf(line, "[%lf] %[^:]: %hx %hx %x", &delay, path, &event.type, &event.code, &event.value);
+			ret = sscanf(linebuf, "[%lf] %[^:]: %hx %hx %x", &delay, path, &event.type, &event.code, &event.value);
 		} else {
-			if(strncmp(line, "/dev/", 5)) continue;
+			if(strncmp(linebuf, "/dev/", 5)) continue;
 
-			ret = sscanf(line, "%[^:]: %hx %hx %x", path, &event.type, &event.code, &event.value);
+			ret = sscanf(linebuf, "%[^:]: %hx %hx %x", path, &event.type, &event.code, &event.value);
 		}
 		if(ret == N) {
 			if(prevdelay >= 0) {
@@ -84,7 +86,7 @@ int main(int argc, char *argv[]) {
 			}
 			if(fd == -1) {
 				if(map_size >= MAP_SIZE) {
-					LOGE("The path index buffer is full(new: %s)", path);
+					LOGE("The path index buffer is full(new: %s) at line %d", path, lineno);
 					goto next;
 				}
 				fd = open(path, O_RDWR);
@@ -92,7 +94,7 @@ int main(int argc, char *argv[]) {
 					LOGE("open %s failure", path);
 					goto next;
 				} else if(ioctl(fd, EVIOCGVERSION, &version)) {
-					LOGE("ioctl get device version failure(path: %s)", path);
+					LOGE("ioctl get device version failure(path: %s) at line %d", path, lineno);
 					close(fd);
 					goto next;
 				} else {
@@ -105,19 +107,19 @@ int main(int argc, char *argv[]) {
 			ret = write(fd, &event, sizeof(event));
 			if(flag) {
 				if(ret < sizeof(event)) {
-					LOGE("write event failed(%lf(%.3lf ms) %s %04x %04x %08x)", delay, usec / 1000.0f, path, event.type, event.code, event.value);
+					LOGE("write event failed(%lf(%.3lf ms) %s %04x %04x %08x) at line %d", delay, usec / 1000.0f, path, event.type, event.code, event.value, lineno);
 				} else {
-					LOGI("%lf(%.3lf ms) %s %04x %04x %08x", delay, usec / 1000.0f, path, event.type, event.code, event.value);
+					LOGI("[LNO:%d] %lf(%.3lf ms) %s %04x %04x %08x", lineno, delay, usec / 1000.0f, path, event.type, event.code, event.value);
 				}
 			} else {
 				if(ret < sizeof(event)) {
-					LOGE("write event failed(%s %04x %04x %08x)", path, event.type, event.code, event.value);
+					LOGE("write event failed(%s %04x %04x %08x) at line %d", path, event.type, event.code, event.value, lineno);
 				} else {
-					LOGI("%s %04x %04x %08x", path, event.type, event.code, event.value);
+					LOGI("[LNO:%d] %s %04x %04x %08x", lineno, path, event.type, event.code, event.value);
 				}
 			}
 		} else {
-			LOGE("sscanf failure(ret: %d)", ret);
+			LOGE("sscanf failure(ret: %d) at line %d", ret, lineno);
 		}
 		next:
 		fflush(stdout);
