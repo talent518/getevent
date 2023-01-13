@@ -37,8 +37,12 @@ char *nowtime(void) {
 }
 
 #define LOGE(fmt, args...) do { \
-	char *err = strerror(errno); \
-	fprintf(stderr, "[%s] " fmt ": %s\n", nowtime(), args, err); \
+	if(errno) { \
+		char *err = strerror(errno); \
+		fprintf(stderr, "[%s] " fmt ": %s\n", nowtime(), args, err); \
+	} else { \
+		fprintf(stderr, "[%s] " fmt "\n", nowtime(), args); \
+	} \
 } while(0)
 
 #define LOGI(fmt, args...) fprintf(stdout, "[%s] " fmt "\n", nowtime(), args)
