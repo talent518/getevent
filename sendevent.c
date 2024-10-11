@@ -8,6 +8,7 @@
 #include <linux/input.h>
 #include <errno.h>
 #include <time.h>
+#include <sys/time.h>
 
 typedef struct {
 	char *path;
@@ -107,6 +108,8 @@ int main(int argc, char *argv[]) {
 					map_size ++;
 				}
 			}
+
+			gettimeofday(&event.time, NULL);
 
 			ret = write(fd, &event, sizeof(event));
 			if(flag) {
