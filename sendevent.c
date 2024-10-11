@@ -19,7 +19,6 @@ typedef struct {
 static map_t maps[MAP_SIZE];
 static int map_size = 0;
 
-
 char *nowtime(void) {
 	static char buf[64];
 	struct timeval tv = {0, 0};
@@ -91,15 +90,15 @@ int main(int argc, char *argv[]) {
 			}
 			if(fd == -1) {
 				if(map_size >= MAP_SIZE) {
-					LOGE("The path index buffer is full(new: %s) at line %d", path, lineno);
+					LOGE("The path index buffer is full, device path is %s at line %d", path, lineno);
 					goto next;
 				}
 				fd = open(path, O_RDWR);
 				if(fd == -1) {
-					LOGE("open %s failure", path);
+					LOGE("Open %s failure at line %d", path, lineno);
 					goto next;
 				} else if(ioctl(fd, EVIOCGVERSION, &version)) {
-					LOGE("ioctl get device version failure(path: %s) at line %d", path, lineno);
+					LOGE("Get device %s version failure at line %d", path, lineno);
 					close(fd);
 					goto next;
 				} else {
@@ -107,6 +106,7 @@ int main(int argc, char *argv[]) {
 					maps[map_size].fd = fd;
 					map_size ++;
 				}
+
 			}
 
 			gettimeofday(&event.time, NULL);
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		} else {
-			LOGE("sscanf failure(ret: %d) at line %d", ret, lineno);
+			LOGE("Data format invalid(ret: %d) at line %d", ret, lineno);
 		}
 		next:
 		fflush(stdout);
@@ -140,3 +140,4 @@ int main(int argc, char *argv[]) {
 
 	return 0;
 }
+
