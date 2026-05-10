@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -12,6 +13,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <time.h>
+#include <signal.h>
+
+static volatile bool is_running = true;
 
 struct label {
     const char *name;
@@ -513,6 +517,11 @@ static void usage(char *name)
     fprintf(stderr, "    -r: print rate events are received\n");
 }
 
+static void exit_signal(int sig)
+{
+    is_running = false;
+}
+
 int main(int argc, char *argv[])
 {
     int c;
@@ -652,7 +661,11 @@ int main(int argc, char *argv[])
     if(dont_block)
         return 0;
 
-    while(1) {
+    signal(SIGPIPE, exit_signal);
+    signal(SIGTERM, exit_signal);
+    signal(SIGINT, exit_signal);
+
+    while(is_running) {
         //int pollres =
         poll(ufds, nfds, -1);
         //printf("poll %d, returned %d\n", nfds, pollres);
