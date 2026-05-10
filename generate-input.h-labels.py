@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Copyright (C) 2015 The Android Open Source Project
 #
@@ -18,6 +18,7 @@
 
 import os
 import re
+import sys
 
 input_prop_list = []
 ev_list = []
@@ -36,58 +37,61 @@ ff_list = []
 
 r = re.compile(r'#define\s+(\S+)\s+((?:0x)?\d+)')
 
-with open('/usr/arm-linux-gnueabi/include/linux/input-event-codes.h', 'r') as f:
-  for line in f:
-    m = r.match(line)
-    if m:
-      name = m.group(1)
-      if name.startswith("INPUT_PROP_"):
-        input_prop_list.append(name)
-      elif name.startswith("EV_"):
-        ev_list.append(name)
-      elif name.startswith("SYN_"):
-        syn_list.append(name)
-      elif name.startswith("KEY_") or name.startswith("BTN_"):
-        key_list.append(name)
-      elif name.startswith("REL_"):
-        rel_list.append(name)
-      elif name.startswith("ABS_"):
-        abs_list.append(name)
-      elif name.startswith("SW_"):
-        sw_list.append(name)
-      elif name.startswith("MSC_"):
-        msc_list.append(name)
-      elif name.startswith("LED_"):
-        led_list.append(name)
-      elif name.startswith("REP_"):
-        rep_list.append(name)
-      elif name.startswith("SND_"):
-        snd_list.append(name)
-      elif name.startswith("MT_TOOL_"):
-        mt_tool_list.append(name)
-      elif name.startswith("FF_STATUS_"):
-        ff_status_list.append(name)
-      elif name.startswith("FF_"):
-        ff_list.append(name)
+for file in ['/usr/include/linux/input-event-codes.h', '/usr/include/linux/input.h']:
+  with open(file, 'r') as f:
+    for line in f:
+      m = r.match(line)
+      if m:
+        name = m.group(1)
+        if name.startswith("INPUT_PROP_"):
+          input_prop_list.append(name)
+        elif name.startswith("EV_"):
+          ev_list.append(name)
+        elif name.startswith("SYN_"):
+          syn_list.append(name)
+        elif name.startswith("KEY_") or name.startswith("BTN_"):
+          key_list.append(name)
+        elif name.startswith("REL_"):
+          rel_list.append(name)
+        elif name.startswith("ABS_"):
+          abs_list.append(name)
+        elif name.startswith("SW_"):
+          sw_list.append(name)
+        elif name.startswith("MSC_"):
+          msc_list.append(name)
+        elif name.startswith("LED_"):
+          led_list.append(name)
+        elif name.startswith("REP_"):
+          rep_list.append(name)
+        elif name.startswith("SND_"):
+          snd_list.append(name)
+        elif name.startswith("MT_TOOL_"):
+          mt_tool_list.append(name)
+        elif name.startswith("FF_STATUS_"):
+          ff_status_list.append(name)
+        elif name.startswith("FF_"):
+          ff_list.append(name)
 
-def Dump(struct_name, values):
-  print 'static struct label %s[] = {' % (struct_name)
+def Dump(f, struct_name, values):
+  f.write('static struct label %s[] = {\n' % (struct_name))
   for value in values:
-    print '    LABEL(%s),' % (value)
-  print '    LABEL_END,'
-  print '};'
+    f.write('    LABEL(%s),\n' % (value))
+  f.write('    LABEL_END,\n')
+  f.write('};\n')
 
-Dump("input_prop_labels", input_prop_list)
-Dump("ev_labels", ev_list)
-Dump("syn_labels", syn_list)
-Dump("key_labels", key_list)
-Dump("rel_labels", rel_list)
-Dump("abs_labels", abs_list)
-Dump("sw_labels", sw_list)
-Dump("msc_labels", msc_list)
-Dump("led_labels", led_list)
-Dump("rep_labels", rep_list)
-Dump("snd_labels", snd_list)
-Dump("mt_tool_labels", mt_tool_list)
-Dump("ff_status_labels", ff_status_list)
-Dump("ff_labels", ff_list)
+with open(sys.argv[1], 'w') as f:
+  Dump(f, "input_prop_labels", input_prop_list)
+  Dump(f, "ev_labels", ev_list)
+  Dump(f, "syn_labels", syn_list)
+  Dump(f, "key_labels", key_list)
+  Dump(f, "rel_labels", rel_list)
+  Dump(f, "abs_labels", abs_list)
+  Dump(f, "sw_labels", sw_list)
+  Dump(f, "msc_labels", msc_list)
+  Dump(f, "led_labels", led_list)
+  Dump(f, "rep_labels", rep_list)
+  Dump(f, "snd_labels", snd_list)
+  Dump(f, "mt_tool_labels", mt_tool_list)
+  Dump(f, "ff_status_labels", ff_status_list)
+  Dump(f, "ff_labels", ff_list)
+

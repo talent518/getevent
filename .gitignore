@@ -1,2 +1,4 @@
+*.o
 getevent
 sendevent
+input.h-labels.h

@@ -1,13 +1,27 @@
+CC = gcc
+
 all: getevent sendevent
+	@echo -n
 
-getevent: getevent.c | input.h-labels.h
-	$(CROSS_COMPILE)gcc -static -O2 -o $@ $<
+getevent: getevent.o
+	@echo LD $@
+	@$(CC) -static -O2 -o $@ $^
 
-sendevent: sendevent.c | input.h-labels.h
-	$(CROSS_COMPILE)gcc -static -O2 -o $@ $<
+sendevent: sendevent.o
+	@echo LD $@
+	@$(CC) -static -O2 -o $@ $^
+
+getevent.o: input.h-labels.h
+sendevent.o: input.h-labels.h
+
+%.o: %.c
+	@echo CC $<
+	@$(CC) -c $< -o $@
 
 input.h-labels.h:
-	./generate-input.h-labels.py > $@
+	@echo GEN $@
+	@./generate-input.h-labels.py $@
 
 clean:
-	-rm -f getevent sendevent input.h-labels.h
+	@rm -vf getevent sendevent input.h-labels.h
+
